@@ -152,9 +152,7 @@ export function canEdit(role: Role | undefined, page: PageId): boolean {
  * Read-only-by-nature pages (dashboard, compliance, ai, report, docs) are NOT
  * here, so they never display a "View Only" badge.
  */
-const EDITABLE_PAGES = new Set<PageId>(
-  Object.values(ROLE_PERMISSIONS).flatMap((p) => p.edit),
-);
+const EDITABLE_PAGES = new Set<PageId>(Object.values(ROLE_PERMISSIONS).flatMap((p) => p.edit));
 
 /** Whether the "View Only" treatment should apply for this role + page. */
 export function isViewOnly(role: Role | undefined, page: PageId): boolean {
