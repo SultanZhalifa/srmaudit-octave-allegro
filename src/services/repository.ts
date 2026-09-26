@@ -51,7 +51,10 @@ export class Repository {
       console.warn('[repo] hydrate failed; starting empty:', e);
       const msg = (e as Error).message ?? '';
       if (msg.includes('app_data') || msg.includes('schema cache')) {
-        toast('Connected, but the database is not set up yet. Run schema.sql in Supabase to enable cloud sync.', 'warning');
+        toast(
+          'Connected, but the database is not set up yet. Run schema.sql in Supabase to enable cloud sync.',
+          'warning',
+        );
       }
     }
   }
