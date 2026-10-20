@@ -2301,3 +2301,30 @@ td strong {
   padding: 3px 8px;
   font-size: 0.78rem;
 }
+
+/* The user's Step 1 impact notes, shown above the register while rating */
+.risk-criteria {
+  margin-bottom: 12px;
+  font-size: 0.78rem;
+  color: var(--text-secondary, inherit);
+}
+.risk-criteria summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-primary, inherit);
+}
+.risk-criteria table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+}
+.risk-criteria th,
+.risk-criteria td {
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+}
+.risk-criteria thead th {
+  font-weight: 600;
+}

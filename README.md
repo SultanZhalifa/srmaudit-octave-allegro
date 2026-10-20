@@ -72,7 +72,8 @@ Things this tool does not do, so nobody has to find out the hard way:
   categories, not built from free-form threat scenarios. Likelihood and impact start from a
   default for each vulnerability and can be changed per risk in the register.
 - **Step 1 is notes.** The risk measurement criteria are saved with the workspace as a
-  reference text. They do not change any score.
+  reference text, and shown above the risk register while you rate. They do not change any
+  score and nothing suggests a rating from them.
 - **Roles change the interface, not the database.** Admin, auditor and auditee decide
   which pages are shown and editable. Users are separated by sign-in, not by role.
 - **One private workspace per account.** One assessment can't be shared between accounts.
