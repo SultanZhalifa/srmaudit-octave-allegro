@@ -117,7 +117,7 @@ export const reportFeature: Feature = {
     return html`
       <div class="page-header fade-up">
         <h1>Report Generator</h1>
-        <p>Produce a comprehensive OCTAVE Allegro security audit report</p>
+        <p>Export the assessment as a PDF security audit report</p>
       </div>
       <div class="grid-2 stagger">
         <div class="card">

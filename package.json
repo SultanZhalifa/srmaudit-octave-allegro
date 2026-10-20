@@ -2,7 +2,7 @@
   "name": "srmaudit-2026",
   "version": "2.0.0",
   "private": true,
-  "description": "Enterprise GRC & audit platform implementing the OCTAVE Allegro risk-assessment methodology.",
+  "description": "OCTAVE Allegro style risk assessment and security audit tool, with a PDF report.",
   "type": "module",
   "license": "UNLICENSED",
   "engines": {
