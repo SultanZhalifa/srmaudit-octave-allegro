@@ -64,6 +64,9 @@ export function navigateTo(page: PageId): void {
   main.style.transform = 'translateY(10px)';
 
   setTimeout(() => {
+    // The page change is delayed to let the old page fade out. If the user signed out in
+    // that time, the shell is gone and there is nothing to render into.
+    if (!main.isConnected) return;
     const feature = FEATURES[page];
     try {
       main.innerHTML = toHtml(breadcrumb(page)) + toHtml(feature.render());
