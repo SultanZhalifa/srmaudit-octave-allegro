@@ -110,9 +110,13 @@ export interface Risk {
   asset: string;
   threat: string;
   vulnerability: string;
+  /** 1 to 5. Starts at the catalogue default and can be changed by the user. */
   likelihood: number;
+  /** 1 to 5. Starts at the catalogue default and can be changed by the user. */
   impact: number;
   score: number;
+  /** True once the user has set the likelihood or impact, so re-running the assessment keeps them. */
+  rated?: boolean;
   impactDesc: string;
   mitigation: string;
   category: VulnerabilityCategory;
