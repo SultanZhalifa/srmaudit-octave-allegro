@@ -21,7 +21,7 @@ No dependencies on any other layer.
 - `constants.ts` — workspace keys, page registry, RBAC matrix + `canAccess`/`canEdit`.
 - `config.ts` — environment-sourced configuration (`import.meta.env`).
 - `events.ts` — a typed pub/sub bus (`toast`, `navigate`, `data-changed`, …).
-- `utils.ts` — `escapeHtml`, `debounce`, `sha256`, `withTimeout`, etc.
+- `utils.ts` — `escapeHtml`, `debounce`, `sha256`, `pbkdf2Hex`, `withTimeout`, etc.
 
 ### `src/data` — reference data
 Static, typed catalogues: the OWASP vulnerability list, ISO 27001 / NIST CSF
