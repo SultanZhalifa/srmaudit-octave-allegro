@@ -66,6 +66,10 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full picture and
 - All user-supplied text is escaped by the `html` tagged template by default;
   trusted markup opts in via `raw()`.
 - The AI API key is the user's own and is stored only in their browser.
+- In local mode, passwords are stored as PBKDF2-SHA256 hashes with a per-account salt
+  (older accounts are upgraded the next time they sign in). A local account only guards
+  the workspace in this browser; the data in IndexedDB is not encrypted. See
+  [ADR 3](docs/adr/0003-storage-adapter-cloud-or-local.md).
 - Evidence files sit in a **private** Supabase bucket. Row-level policies only let a
   user reach the folder named after their own id, and the app opens files through
   signed links that expire after an hour. Upgrading an older project? See the note
