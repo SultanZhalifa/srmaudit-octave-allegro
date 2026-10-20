@@ -3,9 +3,17 @@ import type { Risk } from '@/core/types';
 import { html, raw, type RawHtml } from '@/ui/html';
 import { icon } from '@/ui/icons';
 import { button, emptyState } from '@/ui/components';
-import { onAction } from '@/ui/dom';
+import { onAction, onChange } from '@/ui/dom';
 import { openModal, closeModal } from '@/ui/modal';
-import { buildRiskRegister } from '@/services/engines/risk-engine';
+import {
+  buildRiskRegister,
+  rateRisk,
+  resetRating,
+  RATING_MAX,
+  RATING_MIN,
+} from '@/services/engines/risk-engine';
+import { canEdit } from '@/core/constants';
+import { backend } from '@/services/backend';
 import { getRiskLevel } from '@/data/risk-levels';
 import { IMPACT_AREAS } from '@/data/octave-reference';
 import { logActivity } from '@/services/activity-log';
@@ -28,11 +36,43 @@ let activeFilter: string | null = null;
 function runAssessment(): void {
   const threats = repo().get('assetThreats');
   if (Object.keys(threats).length === 0) return toast('Identify threats first (Module 4)', 'error');
-  const risks = buildRiskRegister(threats);
+  const risks = buildRiskRegister(threats, repo().get('risks'));
   repo().set('risks', risks);
   logActivity('Risk Assessment', `${risks.length} risks computed`, 'high');
   toast(`${risks.length} risks assessed`);
   navigate('risk');
+}
+
+/** Show the page again with the new scores, without jumping back to the top of the register. */
+function refreshKeepingScroll(): void {
+  const top = document.getElementById('riskRegister')?.scrollTop ?? 0;
+  navigate('risk');
+  setTimeout(() => {
+    const register = document.getElementById('riskRegister');
+    if (register) register.scrollTop = top;
+  }, 200);
+}
+
+function ratingSelect(
+  index: number,
+  field: 'likelihood' | 'impact',
+  value: number,
+  editable: boolean,
+): RawHtml {
+  const options = [];
+  for (let n = RATING_MIN; n <= RATING_MAX; n++) {
+    options.push(html`<option value="${n}" ${n === value ? raw('selected') : ''}>${n}</option>`);
+  }
+  return html`<select
+    class="form-control risk-rating-select"
+    data-change="risk:rate"
+    data-index="${index}"
+    data-field="${field}"
+    aria-label="${field === 'likelihood' ? 'Likelihood' : 'Impact'}, 1 to 5"
+    ${editable ? '' : raw('disabled')}
+  >
+    ${options}
+  </select>`;
 }
 
 function register(): void {
@@ -40,6 +80,36 @@ function register(): void {
   registered = true;
 
   onAction('risk:run', () => runAssessment());
+
+  onChange('risk:rate', (el) => {
+    const index = Number(el.dataset.index);
+    const field = el.dataset.field === 'impact' ? 'impact' : 'likelihood';
+    const risks = repo().get('risks');
+    const risk = risks[index];
+    if (!risk) return;
+    const value = Number((el as HTMLSelectElement).value);
+    risks[index] = rateRisk(
+      risk,
+      field === 'likelihood' ? value : risk.likelihood,
+      field === 'impact' ? value : risk.impact,
+    );
+    repo().set('risks', risks);
+    logActivity(
+      'Risk Rated',
+      `${risk.threat} on ${risk.asset}: ${field} set to ${value}`,
+      'accent',
+    );
+    refreshKeepingScroll();
+  });
+
+  onAction('risk:resetRating', (el) => {
+    const index = Number(el.dataset.index);
+    const risks = repo().get('risks');
+    if (!risks[index]) return;
+    risks[index] = resetRating(risks[index]);
+    repo().set('risks', risks);
+    refreshKeepingScroll();
+  });
 
   onAction('risk:step', (el) => {
     const step = Number(el.dataset.step);
@@ -92,7 +162,9 @@ function openStep(step: number): void {
       large: true,
       body: html`
         <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:14px;">
-          Define impact thresholds for each area.
+          Describe what a low, medium and high impact means for this organisation in each area.
+          These notes are a reference for rating risks. They are saved with the workspace but do not
+          change any score: set each risk's likelihood and impact in the register.
         </p>
         ${IMPACT_AREAS.map((ia) => {
           const c = criteria[ia.id] ?? {
@@ -229,6 +301,7 @@ export const riskFeature: Feature = {
   render(): RawHtml {
     register();
     const risks = repo().get('risks');
+    const editable = canEdit(backend.user?.role, 'risk');
     return html`
       <div class="page-header fade-up">
         <h1>Risk Assessment Engine</h1>
@@ -264,13 +337,20 @@ export const riskFeature: Feature = {
             <h3>${raw(icon('list-checks', 'icon'))} Risk Register (${risks.length})</h3>
           </div>
           ${risks.length === 0
+            ? ''
+            : html`<p class="hint" style="margin-bottom:10px;">
+                Likelihood and impact start from defaults for each vulnerability. Change them to
+                match this organisation. Findings and the report use the ratings, so generate the
+                findings again after changing them.
+              </p>`}
+          ${risks.length === 0
             ? emptyState({
                 icon: 'crosshair',
                 title: 'Empty register',
                 message: 'Run the assessment wizard to populate risks.',
               })
             : html`<div id="riskRegister" style="max-height:360px;overflow-y:auto;">
-                ${risks.map((r) => {
+                ${risks.map((r, i) => {
                   const lv = getRiskLevel(r.score);
                   return html`<div
                     class="finding-card ${lv.label.toLowerCase()}"
@@ -284,6 +364,22 @@ export const riskFeature: Feature = {
                     </div>
                     <div class="finding-body" style="font-size:0.78rem;">
                       <strong>Asset:</strong> ${r.asset} · ${r.impactDesc}
+                    </div>
+                    <div class="risk-rating">
+                      <label
+                        >Likelihood ${ratingSelect(i, 'likelihood', r.likelihood, editable)}</label
+                      >
+                      <label>Impact ${ratingSelect(i, 'impact', r.impact, editable)}</label>
+                      ${r.rated
+                        ? html`<span class="hint"
+                            >edited${editable
+                              ? html` ·
+                                  <a href="#" data-action="risk:resetRating" data-index="${i}"
+                                    >reset</a
+                                  >`
+                              : ''}</span
+                          >`
+                        : html`<span class="hint">default</span>`}
                     </div>
                   </div>`;
                 })}

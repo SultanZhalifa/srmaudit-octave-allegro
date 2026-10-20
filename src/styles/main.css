@@ -2280,3 +2280,24 @@ td strong {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Likelihood and impact selectors on each risk in the register */
+.risk-rating {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: var(--text-secondary, inherit);
+}
+.risk-rating label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.risk-rating-select {
+  width: auto;
+  padding: 3px 8px;
+  font-size: 0.78rem;
+}
