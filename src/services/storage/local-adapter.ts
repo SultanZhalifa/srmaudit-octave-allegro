@@ -15,6 +15,9 @@ interface StoredAccount {
   profile: AuthUser;
 }
 
+/** Object URLs already made for stored files, so one file doesn't get a new URL on every render. */
+const objectUrls = new Map<string, string>();
+
 export class LocalAdapter implements StorageAdapter {
   readonly mode = 'local' as const;
 
@@ -77,10 +80,30 @@ export class LocalAdapter implements StorageAdapter {
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
     const path = `${userId}/${Date.now()}_${safe}`;
     await idb.set('files', path, file);
-    return { url: URL.createObjectURL(file), path, stored: 'local' };
+    return { path, stored: 'local' };
   }
 
   async deleteFile(path: string): Promise<void> {
     await idb.del('files', path);
+    const url = objectUrls.get(path);
+    if (url) {
+      URL.revokeObjectURL(url);
+      objectUrls.delete(path);
+    }
+  }
+
+  async getFileUrls(paths: string[]): Promise<Record<string, string>> {
+    const urls: Record<string, string> = {};
+    for (const path of paths) {
+      let url = objectUrls.get(path);
+      if (!url) {
+        const file = await idb.get<Blob>('files', path);
+        if (!file) continue;
+        url = URL.createObjectURL(file);
+        objectUrls.set(path, url);
+      }
+      urls[path] = url;
+    }
+    return urls;
   }
 }

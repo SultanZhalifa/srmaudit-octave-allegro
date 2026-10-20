@@ -92,6 +92,10 @@ class Backend {
   deleteFile(path: string): Promise<void> {
     return this.repo.deleteFile(path);
   }
+
+  getFileUrls(paths: string[]): Promise<Record<string, string>> {
+    return this.repo.getFileUrls(paths);
+  }
 }
 
 export const backend = new Backend();

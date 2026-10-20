@@ -12,7 +12,7 @@ export interface SignUpResult {
 }
 
 export interface UploadedFile {
-  url: string;
+  /** Where the file lives inside the store. Open it later with {@link StorageAdapter.getFileUrls}. */
   path: string;
   stored: 'cloud' | 'local';
 }
@@ -35,4 +35,10 @@ export interface StorageAdapter {
   // ----- Evidence files -----
   uploadFile(userId: string, file: File): Promise<UploadedFile>;
   deleteFile(path: string): Promise<void>;
+  /**
+   * URLs that can be put in an <img> or a link right now, keyed by path. Paths that
+   * can't be resolved are left out. In cloud mode these are short-lived signed links,
+   * because the evidence bucket is private; don't store them.
+   */
+  getFileUrls(paths: string[]): Promise<Record<string, string>>;
 }
