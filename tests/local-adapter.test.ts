@@ -58,3 +58,49 @@ describe('LocalAdapter auth', () => {
     expect(forU2.risks).toBeUndefined();
   });
 });
+
+describe('LocalAdapter evidence files', () => {
+  // jsdom has no object URLs; give each stored file a recognisable fake one.
+  let counter = 0;
+  const created: string[] = [];
+  const revoked: string[] = [];
+  beforeEach(() => {
+    counter = 0;
+    created.length = 0;
+    revoked.length = 0;
+    URL.createObjectURL = () => {
+      const url = `blob:test/${++counter}`;
+      created.push(url);
+      return url;
+    };
+    URL.revokeObjectURL = (url: string) => void revoked.push(url);
+  });
+
+  it('keeps the file in IndexedDB and returns a path, not a URL', async () => {
+    const a = new LocalAdapter();
+    const res = await a.uploadFile('local-abc', new File(['hello'], 'note.txt'));
+    expect(res.stored).toBe('local');
+    expect(res.path).toMatch(/^local-abc\/\d+_note.txt$/);
+    expect(res).not.toHaveProperty('url');
+  });
+
+  it('gives a URL for a stored file, reuses it, and drops it on delete', async () => {
+    const a = new LocalAdapter();
+    const { path } = await a.uploadFile('local-abc', new File(['hello'], 'pic.png'));
+
+    const first = await a.getFileUrls([path]);
+    const again = await a.getFileUrls([path]);
+    expect(first[path]).toBe('blob:test/1');
+    expect(again[path]).toBe('blob:test/1');
+    expect(created).toHaveLength(1);
+
+    await a.deleteFile(path);
+    expect(revoked).toEqual(['blob:test/1']);
+    expect(await a.getFileUrls([path])).toEqual({});
+  });
+
+  it('leaves out paths that are not stored', async () => {
+    const a = new LocalAdapter();
+    expect(await a.getFileUrls(['local-abc/missing.png'])).toEqual({});
+  });
+});

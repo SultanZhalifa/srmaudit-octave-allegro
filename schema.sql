@@ -27,9 +27,11 @@ create policy "own rows" on public.app_data
   with check (auth.uid() = user_id);
 
 -- 2) Evidence storage bucket --------------------------------
+-- Private bucket: files are opened through short-lived signed links, and the policies
+-- below only let a user reach the folder named after their own id.
 insert into storage.buckets (id, name, public)
-values ('evidence', 'evidence', true)
-on conflict (id) do nothing;
+values ('evidence', 'evidence', false)
+on conflict (id) do update set public = false;
 
 -- Files are stored as:  evidence/{user_id}/{timestamp}_{filename}
 do $$

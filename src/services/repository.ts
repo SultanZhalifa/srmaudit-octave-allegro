@@ -120,4 +120,8 @@ export class Repository {
   deleteFile(path: string): Promise<void> {
     return this.adapter.deleteFile(path);
   }
+
+  getFileUrls(paths: string[]): Promise<Record<string, string>> {
+    return this.adapter.getFileUrls(paths);
+  }
 }

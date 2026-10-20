@@ -52,12 +52,14 @@ export async function handleEvidenceUpload(input: HTMLInputElement): Promise<voi
       continue;
     }
     try {
-      const { url, path, stored } = await backend.uploadFile(file);
+      const { path, stored } = await backend.uploadFile(file);
       evidence.push({
         name: file.name,
         type: file.type,
         size: file.size,
-        data: url,
+        // Files are found again through storagePath. Older records hold a URL here, which
+        // is no longer used because the bucket is private.
+        data: '',
         storagePath: path,
         stored,
         date: new Date().toLocaleDateString(),
@@ -72,7 +74,26 @@ export async function handleEvidenceUpload(input: HTMLInputElement): Promise<voi
   navigate('evidence');
 }
 
+/** Fill in the thumbnails: the files are private, so each gets a fresh link when the page is shown. */
+async function loadThumbnails(): Promise<void> {
+  const images = Array.from(document.querySelectorAll<HTMLImageElement>('img[data-evidence-path]'));
+  const paths = [...new Set(images.map((img) => img.dataset.evidencePath ?? ''))].filter(Boolean);
+  if (paths.length === 0) return;
+  try {
+    const urls = await backend.getFileUrls(paths);
+    for (const img of images) {
+      const url = urls[img.dataset.evidencePath ?? ''];
+      if (url) img.src = url;
+    }
+  } catch (e) {
+    console.warn('[evidence] could not load thumbnails:', e);
+  }
+}
+
 export const evidenceFeature: Feature = {
+  onMount(): void {
+    void loadThumbnails();
+  },
   render(): RawHtml {
     register();
     const evidence = repo().get('evidence');
@@ -119,9 +140,13 @@ export const evidenceFeature: Feature = {
                   (e, i) =>
                     html`<div class="evidence-item" data-search="${e.name.toLowerCase()}">
                       <div class="evidence-preview">
-                        ${e.type.startsWith('image') && e.data
-                          ? html`<img src="${e.data}" alt="" />`
-                          : raw(icon(e.type.includes('pdf') ? 'file-text' : 'file-check', 'icon'))}
+                        ${!e.type.startsWith('image')
+                          ? raw(icon(e.type.includes('pdf') ? 'file-text' : 'file-check', 'icon'))
+                          : e.storagePath
+                            ? html`<img data-evidence-path="${e.storagePath}" alt="" />`
+                            : e.data
+                              ? html`<img src="${e.data}" alt="" />`
+                              : raw(icon('file-check', 'icon'))}
                       </div>
                       <div class="evidence-info">
                         <div class="evidence-name" title="${e.name}">${e.name}</div>

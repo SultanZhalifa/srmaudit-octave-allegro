@@ -66,3 +66,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full picture and
 - All user-supplied text is escaped by the `html` tagged template by default;
   trusted markup opts in via `raw()`.
 - The AI API key is the user's own and is stored only in their browser.
+- Evidence files sit in a **private** Supabase bucket. Row-level policies only let a
+  user reach the folder named after their own id, and the app opens files through
+  signed links that expire after an hour. Upgrading an older project? See the note
+  in [SETUP.md](SETUP.md) (step 6): don't re-run `schema.sql`, run one `update` instead.

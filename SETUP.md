@@ -57,6 +57,19 @@ You lost your old Supabase account — no problem. Create a fresh free one:
    **`schema.sql`**, and click **Run**. This creates the per-user data table
    (with row-level security) and the evidence storage bucket.
 
+   > **Already have a project set up?** Do **not** run `schema.sql` again: it starts
+   > by dropping the `app_data` table, which deletes your audit data. Earlier versions
+   > created the evidence bucket as **public**, so anyone with a file's link could open
+   > it. To make it private, run only this in the SQL Editor:
+   >
+   > ```sql
+   > update storage.buckets set public = false where id = 'evidence';
+   > ```
+   >
+   > Nothing else changes. Files are opened through short-lived signed links that the
+   > app creates from each file's stored path, so existing evidence keeps working. Links
+   > that were copied out of the app earlier stop working, which is the point.
+
 7. In **Authentication → Providers**, make sure **Email** is enabled.
    For quick testing you can turn **off** "Confirm email" so sign-up logs you in
    immediately (turn it back on for production).

@@ -1,6 +1,7 @@
 /**
  * Supabase storage adapter — cloud mode. Real Supabase Auth, per-user
- * row-level-secured `app_data` table, and evidence file storage.
+ * row-level-secured `app_data` table, and evidence file storage. The evidence bucket
+ * is private: files are opened through short-lived signed links, never public URLs.
  */
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
 import type { AuthUser, Role } from '@/core/types';
@@ -8,6 +9,8 @@ import { config } from '@/core/config';
 import type { SignUpResult, StorageAdapter, UploadedFile } from './storage-adapter';
 
 const BUCKET = 'evidence';
+/** How long a signed link to an evidence file stays valid, in seconds. */
+const SIGNED_URL_SECONDS = 60 * 60;
 
 /** Translate raw Supabase auth errors into clear, actionable guidance. */
 function friendlyAuthError(message: string): string {
@@ -41,8 +44,8 @@ export class SupabaseAdapter implements StorageAdapter {
   readonly mode = 'cloud' as const;
   private readonly client: SupabaseClient;
 
-  constructor() {
-    this.client = createClient(config.supabase.url, config.supabase.anonKey);
+  constructor(client?: SupabaseClient) {
+    this.client = client ?? createClient(config.supabase.url, config.supabase.anonKey);
   }
 
   async restoreSession(): Promise<AuthUser | null> {
@@ -106,8 +109,20 @@ export class SupabaseAdapter implements StorageAdapter {
     const path = `${userId}/${Date.now()}_${safe}`;
     const { error } = await this.client.storage.from(BUCKET).upload(path, file);
     if (error) throw new Error(error.message);
-    const { data } = this.client.storage.from(BUCKET).getPublicUrl(path);
-    return { url: data.publicUrl, path, stored: 'cloud' };
+    return { path, stored: 'cloud' };
+  }
+
+  async getFileUrls(paths: string[]): Promise<Record<string, string>> {
+    if (paths.length === 0) return {};
+    const { data, error } = await this.client.storage
+      .from(BUCKET)
+      .createSignedUrls(paths, SIGNED_URL_SECONDS);
+    if (error) throw new Error(error.message);
+    const urls: Record<string, string> = {};
+    for (const item of data ?? []) {
+      if (item.path && item.signedUrl && !item.error) urls[item.path] = item.signedUrl;
+    }
+    return urls;
   }
 
   async deleteFile(path: string): Promise<void> {
