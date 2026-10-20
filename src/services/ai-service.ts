@@ -26,10 +26,12 @@ export async function callAi(prompt: string, system = '', maxTokens = 2048): Pro
   if (!key) throw new Error('No AI API key configured');
 
   if (key.startsWith('AIza')) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.ai.geminiModel}:generateContent?key=${key}`;
+    // The key goes in a header, not the URL: URLs end up in browser history, proxy logs and
+    // error reports, headers don't.
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${config.ai.geminiModel}:generateContent`;
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: system ? `${system}\n\n${prompt}` : prompt }] }],
         generationConfig: { maxOutputTokens: maxTokens },
