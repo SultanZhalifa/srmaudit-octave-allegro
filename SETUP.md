@@ -1,120 +1,91 @@
-# SRMAudit 2026 — Setup Guide
+# SRMAudit 2026 — Setup
 
-An enterprise GRC & audit platform built on the **OCTAVE Allegro** risk-assessment
-methodology. It runs as static files — no build step, no server framework.
-
-The app works in **two real modes**:
+SRMAudit runs in two modes:
 
 | Mode | When | Where data lives |
 |------|------|------------------|
-| **Local** | No Supabase keys in `config.js` | Real account + data in this browser (IndexedDB). Fully functional offline. |
-| **Cloud** | Valid Supabase keys in `config.js` | Supabase Auth + per-user database + evidence storage, synced across devices. |
+| **Local** | No Supabase keys set | Account and data in this browser (IndexedDB). Works offline. |
+| **Cloud** | Supabase keys set | Supabase Auth, a per-user table and file storage, so the data follows you across devices. |
 
-> **Status for this project:** Cloud is already configured in `config.js` for the
-> `SRMAudit` Supabase project (`dpcxttiemhveyssekdmr`). Auth and the connection are
-> verified working. The **only remaining step is running `schema.sql` once** (Step 2
-> below) so the database table and evidence bucket exist.
+## 1. Run it
 
----
+You need Node.js 20 or later.
 
-## 1. Run the app
-
-Because the app loads JS modules, open it through a local web server (not `file://`):
-
-```powershell
-# From the project folder
-python -m http.server 5500
-# then open  http://localhost:5500
+```bash
+npm install
+npm run dev        # http://localhost:5173
 ```
 
-(Any static server works — VS Code "Live Server", `npx serve`, etc.)
+The login screen shows a **Local workspace** badge. Choose **Sign Up**, make an account,
+and you are in. Everything is saved in this browser.
 
-On first load you'll see the login screen with a **Local workspace** badge. Click
-**Sign Up**, create an account, and you're in. All data persists in this browser.
+`npm run build` writes the static site to `dist/`. Any static host can serve it.
 
----
+## 2. Cloud mode (optional)
 
-## 2. (Recommended) Connect a new Supabase project for cloud sync
+1. Create a project at https://supabase.com (the free plan is enough).
+2. In **Project Settings → API**, copy the **Project URL** and the **anon / publishable
+   key**. Never use the `service_role` or secret key in this app.
+3. Copy the template and fill in the two values:
 
-You lost your old Supabase account — no problem. Create a fresh free one:
-
-1. Go to **https://supabase.com/dashboard** and sign in (GitHub/Google/email).
-2. **New project** → give it a name, set a database password, pick a region, create.
-3. Wait ~1 minute for it to provision.
-4. In the project, open **Project Settings → API** and copy:
-   - **Project URL** (e.g. `https://abcd1234.supabase.co`)
-   - **anon / public** key (the long `eyJ...` key — *not* the service role key)
-5. Open **`config.js`** in this project and paste them in:
-
-   ```js
-   supabase: {
-     url: 'https://abcd1234.supabase.co',
-     anonKey: 'eyJhbGciOiJ...your-anon-key...'
-   }
+   ```bash
+   cp .env.example .env
    ```
 
-6. In Supabase, open **SQL Editor → New query**, paste the entire contents of
-   **`schema.sql`**, and click **Run**. This creates the per-user data table
-   (with row-level security) and the evidence storage bucket.
+   ```
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-anon-key
+   ```
 
-   > **Already have a project set up?** Do **not** run `schema.sql` again: it starts
-   > by dropping the `app_data` table, which deletes your audit data. Earlier versions
-   > created the evidence bucket as **public**, so anyone with a file's link could open
-   > it. To make it private, run only this in the SQL Editor:
+   Vite reads these when it starts, so restart `npm run dev`. For a deployed build, set the
+   same two variables where you build it: they are baked into the bundle, which is fine
+   for the anon key because row-level security protects the data.
+4. In Supabase open **SQL Editor → New query**, paste all of **`schema.sql`**, and run it
+   once. It creates the per-user data table (with row-level security) and a private
+   `evidence` storage bucket.
+
+   > **Already have a project set up?** Do **not** run `schema.sql` again: it starts by
+   > dropping the `app_data` table, which deletes your audit data. Earlier versions
+   > created the evidence bucket as **public**, so anyone with a file's link could open it.
+   > To make it private, run only this:
    >
    > ```sql
    > update storage.buckets set public = false where id = 'evidence';
    > ```
    >
-   > Nothing else changes. Files are opened through short-lived signed links that the
-   > app creates from each file's stored path, so existing evidence keeps working. Links
-   > that were copied out of the app earlier stop working, which is the point.
+   > Nothing else changes. Files are opened through short-lived signed links that the app
+   > creates from each file's stored path, so existing evidence keeps working. Links that
+   > were copied out of the app earlier stop working, which is the point.
+5. In **Authentication → Providers**, make sure **Email** is enabled. For quick testing you
+   can turn off "Confirm email" so sign-up logs you in at once. Turn it back on for real use.
+6. Reload the app. The login badge now reads **Cloud workspace**.
 
-7. In **Authentication → Providers**, make sure **Email** is enabled.
-   For quick testing you can turn **off** "Confirm email" so sign-up logs you in
-   immediately (turn it back on for production).
+## 3. AI assistant (optional)
 
-8. Reload the app. The login badge now reads **Cloud workspace**. Sign up — your
-   account and data now live in Supabase and sync across devices.
+Without a key, the assistant answers from a built-in OWASP and OCTAVE knowledge base. For
+open-ended answers, add your own key under **Settings → AI Provider**:
 
----
+- **Google Gemini** keys start with `AIza` (https://aistudio.google.com/apikey)
+- **OpenRouter** keys start with `sk-or-` (https://openrouter.ai/keys)
 
-## 3. (Optional) Enable live AI
+The key is stored only in your browser. When you use it, your questions go to that provider
+from the browser.
 
-The AI Assistant works out of the box from a built-in **OWASP / OCTAVE knowledge
-base** (real reference material — no made-up answers). For open-ended, generative
-responses, add your own API key:
+## 4. A quick tour
 
-1. Sign in → **Settings → AI Provider**.
-2. Paste a key. The provider is auto-detected:
-   - **Google Gemini** keys start with `AIza…` (https://aistudio.google.com/apikey)
-   - **OpenRouter** keys start with `sk-or-…` (https://openrouter.ai/keys)
-3. Save. The key is stored **only in your browser** and is never synced or shared.
+- On the **Dashboard**, **Load Example** fills in a complete worked scenario you can edit.
+- Work through the pages in order: Organization, Assets, Threats, Risk, Audit Checklist,
+  Evidence, Compliance, Findings.
+- On the **Risk** page, run the assessment, then set each risk's likelihood and impact.
+  Generate the findings again after changing them.
+- **Report** exports the assessment as a PDF.
+- Switch between the light and dark theme from the sidebar or Settings.
 
----
+Roles: **admin** can edit everything, **auditor** everything except the user list, and
+**auditee** can only view findings and the assistant and upload evidence. Roles only change
+what the interface shows; see the [Limits](README.md#limits).
 
-## 4. Project structure
+## 5. Where things are
 
-```
-index.html         App shell (login, sidebar, topbar, modal)
-config.js          >> EDIT THIS << Supabase keys + branding
-style.css          Warm-tone enterprise design system (light + dark)
-supabase.js        Backend facade: Supabase (cloud) OR IndexedDB (local)
-app.js             Core app, routing, RBAC, dashboard, settings, pages
-modules.js         CRUD, AI, PDF report, example dataset
-data/icons.js      Inline SVG icon library (zero emoji)
-data/owasp-vulns.js  OWASP catalogue + ISO/NIST mapping + AI knowledge base
-schema.sql         Run once in Supabase SQL Editor
-```
-
----
-
-## 5. Quick tour
-
-- **Dashboard** → "Load Example" populates a complete worked scenario.
-- Work the **8-step OCTAVE Allegro** flow: Organization → Assets → Threats →
-  Risk → Audit Checklist → Evidence → Compliance → Findings.
-- **Report Generator** exports a full PDF audit report with a final opinion.
-- Toggle **light / dark** warm theme from the sidebar footer or Settings.
-
-Roles: **Admin** (full), **Auditor** (audit functions), **Auditee** (view + evidence).
+See the layout in [README.md](README.md#architecture) and
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

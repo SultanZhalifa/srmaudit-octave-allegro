@@ -1,5 +1,5 @@
 /**
- * PDF report service — renders a comprehensive OCTAVE Allegro audit report from
+ * PDF report service — renders the OCTAVE Allegro audit report from
  * the workspace data using jsPDF. Section inclusion is controlled by a flag set.
  */
 import { jsPDF } from 'jspdf';

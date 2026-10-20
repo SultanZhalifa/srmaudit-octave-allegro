@@ -9,8 +9,8 @@ Accepted
 ## Context
 
 The project began as three large vanilla-JS files with inline event handlers and
-raw HTML string templating. It needed to become a long-lived, maintainable,
-enterprise-grade codebase.
+raw HTML string templating. It needed to become something that can be read, tested and
+changed without breaking it.
 
 ## Decision
 

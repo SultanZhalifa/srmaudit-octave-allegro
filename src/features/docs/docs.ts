@@ -55,7 +55,7 @@ const MODULES: [string, string][] = [
   ['Compliance Scoring', 'Live compliance gauge and breakdown computed from your checklist.'],
   ['Audit Findings', 'Auto-generate findings from high risks and non-compliant controls.'],
   ['AI Assistant', 'Live AI with your API key, or the built-in OWASP/OCTAVE knowledge base.'],
-  ['Report Generator', 'Export a comprehensive PDF audit report with a final opinion.'],
+  ['Report Generator', 'Export the assessment as a PDF report with a final opinion.'],
 ];
 
 export const docsFeature: Feature = {

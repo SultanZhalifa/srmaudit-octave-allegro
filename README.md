@@ -1,14 +1,19 @@
 # SRMAudit 2026
 
-An enterprise **GRC & security-audit platform** implementing the **OCTAVE Allegro**
-risk-assessment methodology. TypeScript + Vite, no UI framework — a small, fast,
-fully-typed SPA with a clean layered architecture.
+A web tool for running an **OCTAVE Allegro** style risk assessment and a security audit
+checklist for one organisation, step by step, and exporting the result as a PDF report.
+It was built as a Security Risk Management mini project. TypeScript and Vite, no UI
+framework.
 
-- **Real data, always.** Cloud mode (Supabase auth + per-user RLS + storage) or a
-  fully-functional local mode (IndexedDB). No mocks, no fake state.
-- **Warm, minimal, accessible UI.** One accent colour, light/dark warm themes,
-  zero emoji — every glyph is an inline SVG.
-- **Strict quality gates.** Strict TypeScript, ESLint, Prettier, Vitest, CI.
+It follows OCTAVE Allegro's idea of starting from the information assets, but it is not
+the full method: see [Limits](#limits) below.
+
+- **Two ways to store data.** In local mode, accounts and data stay in this browser
+  (IndexedDB). In cloud mode they live in your own Supabase project, with row-level
+  security so each user only reaches their own rows. The pages work the same in both.
+- **Checked on every push.** Strict TypeScript, ESLint with zero warnings, Prettier,
+  Vitest and a production build run in CI.
+- **One accent colour, light and dark themes, no emoji** (every icon is an inline SVG).
 
 ## Quick start
 
@@ -58,6 +63,25 @@ core  ←  data  ←  services  ←  features  ←  app
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full picture and
 [docs/adr](docs/adr) for the key decisions.
+
+## Limits
+
+Things this tool does not do, so nobody has to find out the hard way:
+
+- **A fixed catalogue.** Risks are picked from 19 web application vulnerabilities in 8
+  categories, not built from free-form threat scenarios. Likelihood and impact start from a
+  default for each vulnerability and can be changed per risk in the register.
+- **Step 1 is notes.** The risk measurement criteria are saved with the workspace as a
+  reference text. They do not change any score.
+- **Roles change the interface, not the database.** Admin, auditor and auditee decide
+  which pages are shown and editable. Users are separated by sign-in, not by role.
+- **One private workspace per account.** One assessment can't be shared between accounts.
+  The Users page is a list inside a workspace.
+- **Local mode is a convenience lock.** The data in IndexedDB is not encrypted, and
+  clearing the site's data deletes it.
+- **The assistant is small unless you give it a key.** Without a key it answers from a
+  built-in knowledge base. With a Gemini or OpenRouter key, your questions are sent to that
+  provider from the browser.
 
 ## Security notes
 
