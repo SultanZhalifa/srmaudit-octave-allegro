@@ -2,7 +2,7 @@
  * Risk engine — pure functions implementing the OCTAVE Allegro risk
  * calculations. No I/O, no DOM: fully unit-testable.
  */
-import type { Asset, AssetThreatMap, CiaLevel, Risk } from '@/core/types';
+import type { Asset, AssetThreatMap, CiaLevel, Risk, RiskCriteria } from '@/core/types';
 import { findVulnerability } from '@/data/vulnerabilities';
 
 const CIA_WEIGHT: Record<CiaLevel, number> = { High: 3, Medium: 2, Low: 1 };
@@ -24,6 +24,35 @@ export function calcCriticality(
   if (score >= 6) return { level: 'High', score };
   if (score >= 4) return { level: 'Medium', score };
   return { level: 'Low', score };
+}
+
+/** One impact area with the notes the user wrote for it in Step 1. */
+export interface DescribedArea {
+  id: string;
+  name: string;
+  low: string;
+  med: string;
+  high: string;
+}
+
+/**
+ * The impact areas that have at least one note, in the order of `areas`, so the notes can be
+ * shown next to the ratings. Areas with nothing written are left out. The notes don't affect scores.
+ */
+export function describedAreas(
+  areas: readonly { id: string; name: string }[],
+  criteria: RiskCriteria,
+): DescribedArea[] {
+  const out: DescribedArea[] = [];
+  for (const area of areas) {
+    const c = criteria[area.id];
+    if (!c) continue;
+    const low = (c.low ?? '').trim();
+    const med = (c.med ?? '').trim();
+    const high = (c.high ?? '').trim();
+    if (low || med || high) out.push({ id: area.id, name: area.name, low, med, high });
+  }
+  return out;
 }
 
 export const RATING_MIN = 1;

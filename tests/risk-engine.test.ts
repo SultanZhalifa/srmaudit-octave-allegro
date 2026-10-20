@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   calcCriticality,
   buildRiskRegister,
+  describedAreas,
   rateRisk,
   resetRating,
   riskDistribution,
@@ -138,5 +139,46 @@ describe('rating a risk', () => {
     const sql = at(buildRiskRegister({ 'Student DB': ['VULN-001'] }), 0);
     expect(generateFindings([sql], []).length).toBeGreaterThan(0);
     expect(generateFindings([rateRisk(sql, 1, 2)], [])).toHaveLength(0);
+  });
+});
+
+describe('describedAreas', () => {
+  const areas = [
+    { id: 'reputation', name: 'Reputation' },
+    { id: 'financial', name: 'Financial' },
+    { id: 'safety', name: 'Safety' },
+  ];
+
+  it('lists the areas that have notes, in the order of the areas', () => {
+    const rows = describedAreas(areas, {
+      safety: { low: 'No injury', med: '', high: 'Serious injury' },
+      reputation: { low: 'A few complaints', med: 'Local news', high: 'National news' },
+    });
+    expect(rows.map((r) => r.id)).toEqual(['reputation', 'safety']);
+    expect(rows[1]).toEqual({
+      id: 'safety',
+      name: 'Safety',
+      low: 'No injury',
+      med: '',
+      high: 'Serious injury',
+    });
+  });
+
+  it('leaves out areas with nothing written, or only spaces', () => {
+    const rows = describedAreas(areas, {
+      reputation: { low: '', med: '', high: '' },
+      financial: { low: '  ', med: '\n', high: ' ' },
+    });
+    expect(rows).toEqual([]);
+  });
+
+  it('does nothing when no criteria were saved', () => {
+    expect(describedAreas(areas, {})).toEqual([]);
+  });
+
+  it('does not change any risk score', () => {
+    const before = buildRiskRegister({ A: ['VULN-001'] });
+    describedAreas(areas, { reputation: { low: 'x', med: 'y', high: 'z' } });
+    expect(buildRiskRegister({ A: ['VULN-001'] })).toEqual(before);
   });
 });

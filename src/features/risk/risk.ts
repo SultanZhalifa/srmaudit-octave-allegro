@@ -7,6 +7,7 @@ import { onAction, onChange } from '@/ui/dom';
 import { openModal, closeModal } from '@/ui/modal';
 import {
   buildRiskRegister,
+  describedAreas,
   rateRisk,
   resetRating,
   RATING_MAX,
@@ -16,6 +17,7 @@ import { canEdit } from '@/core/constants';
 import { backend } from '@/services/backend';
 import { getRiskLevel } from '@/data/risk-levels';
 import { IMPACT_AREAS } from '@/data/octave-reference';
+import type { DescribedArea } from '@/services/engines/risk-engine';
 import { logActivity } from '@/services/activity-log';
 import type { Feature } from '../feature';
 import { repo, toast, navigate } from '../helpers';
@@ -51,6 +53,35 @@ function refreshKeepingScroll(): void {
     const register = document.getElementById('riskRegister');
     if (register) register.scrollTop = top;
   }, 200);
+}
+
+/** The user's own Step 1 notes, folded away, so they can be read while choosing an impact. */
+function criteriaReference(areas: DescribedArea[]): RawHtml {
+  if (areas.length === 0) return html``;
+  return html`<details class="risk-criteria">
+    <summary>Your impact notes from Step 1</summary>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Area</th>
+          <th scope="col">Low</th>
+          <th scope="col">Medium</th>
+          <th scope="col">High</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${areas.map(
+          (a) =>
+            html`<tr>
+              <th scope="row">${a.name}</th>
+              <td>${a.low}</td>
+              <td>${a.med}</td>
+              <td>${a.high}</td>
+            </tr>`,
+        )}
+      </tbody>
+    </table>
+  </details>`;
 }
 
 function ratingSelect(
@@ -302,6 +333,7 @@ export const riskFeature: Feature = {
     register();
     const risks = repo().get('risks');
     const editable = canEdit(backend.user?.role, 'risk');
+    const notes = describedAreas(IMPACT_AREAS, repo().get('riskCriteria'));
     return html`
       <div class="page-header fade-up">
         <h1>Risk Assessment Engine</h1>
@@ -339,10 +371,11 @@ export const riskFeature: Feature = {
           ${risks.length === 0
             ? ''
             : html`<p class="hint" style="margin-bottom:10px;">
-                Likelihood and impact start from defaults for each vulnerability. Change them to
-                match this organisation. Findings and the report use the ratings, so generate the
-                findings again after changing them.
-              </p>`}
+                  Likelihood and impact start from defaults for each vulnerability. Change them to
+                  match this organisation. Findings and the report use the ratings, so generate the
+                  findings again after changing them.
+                </p>
+                ${criteriaReference(notes)}`}
           ${risks.length === 0
             ? emptyState({
                 icon: 'crosshair',
